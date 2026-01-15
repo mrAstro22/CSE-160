@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Draw a blue rectangle (canvas version)</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="webgl" width="400" height="400"></canvas>
+
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-matrix.js"></script>
+    <script src="asg1.js"></script>
+
+
+    <br></br>
+    <label for="v1x">v1: x</label>
+
+    <input
+      type="text"
+      id="v1x"
+      name="v1x"
+      required
+      minlength="4"
+      maxlength="8"
+      size="10" />
+
+    <label for="v1y">y:</label>
+    <input
+      type="text"
+      id="v1y"
+      name="v1y"
+      required
+      minlength="4"
+      maxlength="8"
+      size="10" />
+
+    <br></br>
+
+    <label for="v2x">v2: x</label>
+
+    <input
+      type="text"
+      id="v2x"
+      name="v2x"
+      required
+      minlength="4"
+      maxlength="8"
+      size="10" />
+
+    <label for="v2y">y:</label>
+    <input
+      type="text"
+      id="v2y"
+      name="v2y"
+      required
+      minlength="4"
+      maxlength="8"
+      size="10" />
+
+    <br></br>
+
+    <label for="op-select">Operation</label>
+
+      <select name="operation" id="op-select">
+        <option value="">--Please choose an option--</option>
+        <option value="add">Add</option>
+        <option value="sub">Subtract</option>
+        <option value="mult">Multiply</option>
+        <option value="div">Divide</option>
+        <option value="dot">Angle Between</option>
+        <option value="area">Area</option>
+        <option value="mag">Magnitude</option>
+        <option value="norm">Normalize</option>
+      </select>
+    
+    <label for="scalar">Scalar:</label>
+    <input
+      type="text"
+      id="scalar"
+      name="scalar"
+      required
+      minlength="4"
+      maxlength="8"
+      size="10" />
+
+    <br></br>
+
+    <input type = "button" value="Draw" onclick="handleDrawEvent()">
+      
+  </body>
+</html>
