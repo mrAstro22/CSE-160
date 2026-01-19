@@ -1,0 +1,19 @@
+#drawingContainer {
+  display: flex;
+  align-items: flex-start; /* top-align the canvas and image */
+  gap: 50px;               /* space between canvas and image */
+}
+
+#webgl {
+  border: 1px solid black;
+}
+
+/* Corrected image styling */
+#referenceImage {
+  max-width: 300px;   
+  max-height: 400px;
+  width: auto;       
+  height: auto;       
+  object-fit: contain; 
+  border: 1px solid black; /* optional border */
+}
