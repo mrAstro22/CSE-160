@@ -1,4 +1,4 @@
-// ColoredPoint.js (c) 2012 matsuda
+// BlockyAnimal.js (c) 2012 matsuda
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
@@ -75,6 +75,7 @@ function connectVariablesToGLSL(){
   // Set an initial value for this matrix to identity
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
+  initCubeBuffer(gl);
 }
 
 // Constants
@@ -83,12 +84,9 @@ const TRIANGLE = 1;
 const CIRCLE = 2;
 
 // Global UI Elements
-let g_selectedColor= [1.0,1.0,1.0,1.0];
-// let g_selectedType = POINT;
 let g_globalAngle = 0;
 let g_yellowAngle = 0;
 let g_magentaAngle = 0;
-let g_shapedList = [];
 let g_yellowAnimation = false;
 
 function UIElements(){
@@ -138,6 +136,8 @@ function tick() {
   g_seconds = performance.now()/1000.0-g_startTime;
   console.log(performance.now());
 
+  updateAnimationAngles();
+
   // Draw Everything
   renderShapes();
 
@@ -149,16 +149,15 @@ function updateAnimationAngles() {
     if(g_yellowAnimation) {
       g_yellowAngle = 45*Math.sin(g_seconds);
     }
-    if(g_magentaAnimation) {
-      g_magentaAngle = (45*Math.sin(3 * g_seconds));
-    }
+    // if(g_magentaAnimation) {
+    //   g_magentaAngle = (45*Math.sin(3 * g_seconds));
+    // }
 }
 
 function renderShapes(){
 
   // Check the time at the start of this function
   // var startTime = performance.now();
-
   var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
   gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
