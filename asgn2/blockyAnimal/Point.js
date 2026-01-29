@@ -1,12 +1,13 @@
-class Point {
-  constructor() {
+class Point{
+  constructor(){
     this.type = 'point';
-    this.position = [0.0, 0.0, 0.0];
+    this.postion = [0.0, 0.0, 0.0];
     this.color = [1.0, 1.0, 1.0, 1.0];
+    this.size = 5.0; 
   }
 
   render() {
-    var xy = this.position;  
+    var xy = this.postion;
     var rgba = this.color;
     var size = this.size;
 
