@@ -6,23 +6,9 @@
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="400" height="400">
+    <canvas id="webgl" width="800" height="800">
     Please use a browser that supports "canvas"
     </canvas>
-
-    <p>
-    <button type= "button" id = "clear">Clear Canvas</button>
-    
-    <br></br>
-    <p>
-    <button type= "button" id = "squares">Squares</button>
-    <button type= "button" id = "triangles">Triangles</button>
-    <button type= "button" id = "circles">Circles</button>
-    
-
-    <p>
-    <button type= "button" id = "green">Green</button>
-    <button type= "button" id = "red">Red</button>
 
     <br></br>
     Shape Color:
@@ -33,13 +19,11 @@
     <br></br>
     Yellow <input type = "range" min = "-45" max = "45" value = "0" class = "slider" id = "yellowSlide">
     <br></br>
+    Tongue <input type = "range" min = "-45" max = "45" value = "0" class = "slider" id = "tongueSlide">
+    <br></br>
     Animation:
     <button type= "button" id = "yellowOn">ON</button>
     <button type= "button" id = "yellowOff">OFF</button>
-
-    <p>
-    Camera Angle: <input type = "range" min = "0" max = "360" value = "0" class = "slider" id = "angleSlide">
-    <p>
 
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
@@ -47,7 +31,9 @@
     <script src="../lib/cuon-matrix.js"></script>
     <script src="Cube.js"></script>
     <script src="Triangle.js"></script>
+    <script src="Sphere.js"></script>
     <script src="BlockyAnimal.js"></script>
+
 
   </body>
 </html>
