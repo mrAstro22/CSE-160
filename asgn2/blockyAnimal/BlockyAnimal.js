@@ -84,10 +84,8 @@ const TRIANGLE = 1;
 const CIRCLE = 2;
 
 // Global UI Elements
-// let g_globalAngleX = -6;
-// let g_globalAngleY = 20;
-let g_globalAngleX = 0;
-let g_globalAngleY = 0;
+let g_globalAngleX = -5;
+let g_globalAngleY = 50;
 let g_mouseDown = false;
 let g_lastX = 0;
 let g_lastY = 0;
@@ -102,8 +100,16 @@ let g_leftElbowAngle = 45;
 let g_rightArmAngle = 225;
 let g_rightElbowAngle = 45;
 
+let g_leftLegAngle = 250;
+let g_rightLegAngle = 250;
+
+let g_leftFootAngle = 45;
+let g_rightFootAngle = 45;
+
+let g_bodyAngle = 15;
+
 // Animations
-let g_yellowAnimation = false;
+let g_standAnimation = false;
 let g_tongueAnimation = false;
 
 
@@ -114,6 +120,14 @@ function UIElements(){
 
   document.getElementById('rightArmSlide').addEventListener('mousemove', function() {g_rightArmAngle = this.value; renderShapes(); })
   document.getElementById('rightElbowSlide').addEventListener('mousemove', function() {g_rightElbowAngle = this.value; renderShapes(); })
+  
+  document.getElementById('leftLegSlide').addEventListener('mousemove', function() {g_leftLegAngle = this.value; renderShapes(); })
+  document.getElementById('rightLegSlide').addEventListener('mousemove', function() {g_rightLegAngle = this.value; renderShapes(); })
+
+  document.getElementById('leftFootSlide').addEventListener('mousemove', function() {g_leftFootAngle = this.value; renderShapes(); })
+  document.getElementById('rightFootSlide').addEventListener('mousemove', function() {g_rightFootAngle = this.value; renderShapes(); })
+
+  document.getElementById('bodySlide').addEventListener('mousemove', function() {g_bodyAngle = this.value; renderShapes(); })
   // document.getElementById('tongueSlide').addEventListener('mousemove', function() {g_tongueAngle = this.value; renderShapes(); })
 
 
@@ -128,15 +142,16 @@ function UIElements(){
     g_lastX = ev.clientX;
     g_lastY = ev.clientY;
     if (ev.shiftKey) {
-      g_yellowAnimation = true;
+      g_standAnimation = true;
       g_tongueAnimation = true;
     }
   };
 
   canvas.onmouseup = function() {
     g_mouseDown = false;
-    g_yellowAnimation = false;    // turn off when released
+    g_standAnimation = false;    // turn off when released
     g_tongueAnimation = false;
+
   };
 
   canvas.onmousemove = function(ev) {
@@ -199,9 +214,14 @@ function updateAnimationAngles() {
     if(g_tongueAnimation) {
       g_tongueAngle = 30*Math.sin(30 * g_seconds);
     }
-    // if(g_magentaAnimation) {
-    //   g_magentaAngle = (45*Math.sin(3 * g_seconds));
-    // }
+    if(g_standAnimation) {
+      let raw = Math.sin(g_seconds);   // -1 to 1
+      let minAngle = 15;
+      let maxAngle = 30;
+
+      g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2
+    }
+
 }
 
 function renderShapes(){
@@ -221,76 +241,100 @@ function renderShapes(){
 
   // Draw Head
   var head = new Sphere();
-  head.matrix = new Matrix4();        // identity
-  head.color = [0.35, 0.3, 0.25, 1.0];  // sloth head color
+  head.matrix = new Matrix4();
   head.matrix.translate(0, 0, 0.35);
+
+  // Save joint space BEFORE scale
+  var headJoint = new Matrix4(head.matrix);
+
+  // HEAD SHAPE
+  head.color = [0.35, 0.3, 0.25, 1.0];
   head.matrix.scale(0.25, 0.22, 0.25);
   head.render();
 
   // Draw Face
-  var faceMat = new Matrix4(head.matrix); // Copy of Head
   var face = new Sphere();
-  face.matrix = faceMat;
-  face.color = [0.7, 0.6, 0.5, 1.0]; // darker brown for the face
-  face.matrix.translate(0, 0, -0.45); // slightly in front of the head
-  face.matrix.scale(0.8, 0.7, 0.6);       // smaller and flatter than the head
+  face.matrix = new Matrix4(headJoint);  // attach to head JOINT
+  face.color = [0.7, 0.6, 0.5, 1.0];
+
+  face.matrix.translate(0, 0, -0.095);
+
+  var faceJoint = new Matrix4(face.matrix);
+
+  face.matrix.scale(0.2, 0.16, 0.18);
   face.render();
 
+
   var eye1 = new Sphere();
-  eye1.matrix = new Matrix4(faceMat);
-  eye1.color = [0, 0, 0, 1];
-  eye1.matrix.translate(-0.5, 0.3, -0.8);
-  eye1.matrix.scale(0.1, 0.1, 0.1);       // smaller and flatter than the head
+  eye1.matrix = new Matrix4(faceJoint);
+  eye1.color = [0,0,0,1];
+  eye1.matrix.translate(-0.07, 0.05, -0.125);
+  eye1.matrix.scale(0.03,0.03,0.03);
   eye1.render();
 
   var eye2 = new Sphere();
-  eye2.matrix = new Matrix4(faceMat);
-  eye2.color = [0, 0, 0, 1];
-  eye2.matrix.translate(0.5, 0.3, -0.8);
-  eye2.matrix.scale(0.1, .1, .1);  
+  eye2.matrix = new Matrix4(faceJoint);
+  eye2.color = [0,0,0,1];
+  eye2.matrix.translate(0.07, 0.05, -0.125);
+  eye2.matrix.scale(0.03,0.03,0.03);
   eye2.render();
 
+
   var nose = new Sphere();
-  nose.matrix = new Matrix4(faceMat);
-  nose.color = [0, 0, 0, 1];
-  nose.matrix.translate(0, 0.1, -0.9);
-  nose.matrix.scale(0.2, .2, .2);  
+  nose.matrix = new Matrix4(faceJoint);
+  nose.color = [0,0,0,1];
+  nose.matrix.translate(0, 0.0, -0.15);
+  nose.matrix.scale(0.04,0.04,0.04);
   nose.render();
 
+
   var mouth = new Sphere();
-  mouth.matrix = new Matrix4(faceMat);
-  mouth.color = [0, 0, 0, 1];
-  mouth.matrix.translate(0, -0.4, -0.9);
-  mouth.matrix.scale(0.3, .1, .1); 
+  mouth.matrix = new Matrix4(faceJoint);
+  mouth.color = [0,0,0,1];
+  mouth.matrix.translate(0, -0.06, -0.15);
+  mouth.matrix.scale(0.08,0.02,0.02);
   mouth.render();
 
-  if(g_tongueAnimation) {
+
+  if (g_tongueAnimation) {
     var tongue = new Sphere();
-    tongue.matrix = new Matrix4(faceMat);
+    tongue.matrix = new Matrix4(faceJoint);
     tongue.color = [1.0, 0.3, 0.4, 1.0];
-    tongue.matrix.translate(0, -0.35, -0.85);
-    tongue.matrix.rotate(-35, 1, 0, 0);
+
+    // joint position
+    tongue.matrix.translate(0, -0.04, -0.12);
+
+    // point downward first
+    tongue.matrix.rotate(-40, 1, 0, 0);
+
+    // sway left-right
     tongue.matrix.rotate(g_tongueAngle, 0, 1, 0);
-    tongue.matrix.scale(0.2, 0.05, .5);
+
+    tongue.matrix.scale(0.05, 0.01, 0.12);
     tongue.render();
   }
 
+
   // Draw Body
   var body = new Sphere();
-  var bodyMat = new Matrix4(body.matrix);  
   body.color = [0.35, 0.3, 0.25, 1.0];
-  body.matrix.rotate(15, 1, 0, 0);
+  body.matrix.rotate(g_bodyAngle, 1, 0, 0);
+  if (g_standAnimation) {
+    body.matrix.rotate(g_bodyAngle, 1, 0, 0);
+  }
   body.matrix.translate(0, 0.08, 0.7);
+  var bodyMat = new Matrix4(body.matrix);  
   body.matrix.scale(0.25, 0.20, 0.5);
   body.render();
 
+
   // Draw a right arm
   var rightArm = new Cube();
-  rightArm.matrix = new Matrix4(bodyMat)
+  rightArm.matrix = new Matrix4(bodyMat);
 
   rightArm.color = [0.35, 0.3, 0.25, 1.0];
-  rightArm.matrix.setTranslate(-0.16, -.4, .3);
-  rightArm.matrix.rotate(-35, 1,0,0);
+  rightArm.matrix.translate(-.16, 0.04, -.18);
+  rightArm.matrix.rotate(-g_rightArmAngle, 1,0,0);
 
   var rightArmMat = new Matrix4(rightArm.matrix);  
   rightArm.matrix.scale(0.15, .15, 0.5);
@@ -301,10 +345,12 @@ function renderShapes(){
   // Right Elbow
   var rightElbow = new Cube();
   rightElbow.matrix = new Matrix4(rightArmMat);
-  var rightElbowMat = new Matrix4(rightElbow.matrix);  
   rightElbow.color = [0.35, 0.3, 0.25, 1.0];
-  rightElbow.matrix.translate(-0.234, -.4, -0.1);
+  rightElbow.matrix.translate(-0.075, 0.09, 0.45);
+  rightElbow.matrix.rotate(g_rightElbowAngle,1,0,0);
+
   rightElbow.matrix.scale(0.15, .15, 0.4);  
+  rightElbow.matrix.translate(0, -0.5, 0);
   rightElbow.render();
 
   // Draw a left arm
@@ -312,7 +358,7 @@ function renderShapes(){
   leftArm.matrix = new Matrix4(bodyMat);
 
   leftArm.color = [0.35, 0.3, 0.25, 1.0];
-  leftArm.matrix.translate(0.15, 0, .5);
+  leftArm.matrix.translate(.16, 0, -.18);
   leftArm.matrix.rotate(-g_leftArmAngle, 1, 0,0);
 
   var leftArmMat = new Matrix4(leftArm.matrix);  
@@ -333,27 +379,78 @@ function renderShapes(){
   leftElbow.matrix.translate(0, -0.5, 0);
   leftElbow.render();
 
-  // Draw Nails
-  // var leftHand = new Cube();
-  // leftHand.matrix = new Matrix4(leftElbowMat);
-  // leftHand.color = [0.6, 0.6, 0.6, 1];
-  // leftHand.matrix.translate(0.1, -.3, -0.15);
-  // leftHand.matrix.scale(.03, .03, 0.05);  
-  // leftHand.render();
+  // Right Leg
+  var rightLeg = new Cube();
+  rightLeg.matrix = new Matrix4(bodyMat);  
 
-  // var leftHand2 = new Cube();
-  // leftHand2.matrix = new Matrix4(leftElbowMat);
-  // leftHand2.color = [0.6, 0.6, 0.6, 1];
-  // leftHand2.matrix.translate(0.15, -.3, -0.15);
-  // leftHand2.matrix.scale(.03, .03, 0.05);  
-  // leftHand2.render();
+  rightLeg.color = [0.32, 0.28, 0.24, 1.0];
 
-  // var leftHand3 = new Cube();
-  // leftHand3.matrix = new Matrix4(leftElbowMat);
-  // leftHand3.color = [0.6, 0.6, 0.6, 1];
-  // leftHand3.matrix.translate(0.15, -.3, -0.15);
-  // leftHand3.matrix.scale(.03, .03, 0.05);  
-  // leftHand3.render();
+  // Translate to hip position relative to the body
+  rightLeg.matrix.translate(-0.17, 0, 0.2);  // tweak these numbers to fit your model
+
+  // Rotate at the hip if needed (for animation)
+  rightLeg.matrix.rotate(-g_rightLegAngle, 1, 0, 0);  // optional rotation
+
+  // Save the joint matrix for knee/foot
+  var rightLegJoint = new Matrix4(rightLeg.matrix);
+
+  // Scale the leg shape
+  rightLeg.matrix.scale(0.15, .15, 0.4);
+
+  rightLeg.render();
+
+  // Right Foot
+  var rightFoot = new Cube();
+  rightFoot.matrix = new Matrix4(rightLegJoint);  // start at the knee/hip joint
+  rightFoot.color = [0.32, 0.28, 0.24, 1.0];      // slightly darker brown for the foot
+
+  // Translate to ankle/foot position relative to the leg
+  rightFoot.matrix.translate(0, 0.1, 0.3);  // move forward along Z, tweak if needed
+
+  // Optional: rotate foot slightly
+  rightFoot.matrix.rotate(g_rightFootAngle, 1, 0, 0);   // tilt foot forward slightly
+
+  // Scale the foot shape
+  rightFoot.matrix.scale(0.15, 0.15, 0.25);  // make it shorter and flatter than the leg
+
+  rightFoot.render();
+
+  // Left Leg
+  var leftLeg = new Cube();
+  leftLeg.matrix = new Matrix4(bodyMat);  
+
+  leftLeg.color = [0.32, 0.28, 0.24, 1.0];
+
+  // Translate to hip position relative to the body
+  leftLeg.matrix.translate(0.06, 0, 0.2);  // tweak these numbers to fit your model
+
+  // Rotate at the hip if needed (for animation)
+  leftLeg.matrix.rotate(-g_leftLegAngle, 1, 0, 0);  // optional rotation
+
+  // Save the joint matrix for knee/foot
+  var leftLegJoint = new Matrix4(leftLeg.matrix);
+
+  // Scale the leg shape
+  leftLeg.matrix.scale(0.15, .15, 0.4);
+
+  leftLeg.render();
+
+  // Left Foot
+  var leftFoot = new Cube();
+  leftFoot.matrix = new Matrix4(leftLegJoint);  // start at the knee/hip joint
+  leftFoot.color = [0.32, 0.28, 0.24, 1.0];      // slightly darker brown for the foot
+
+  // Translate to ankle/foot position relative to the leg
+  leftFoot.matrix.translate(0, 0.1, 0.3);  // move forward along Z, tweak if needed
+
+  // Optional: rotate foot slightly
+  leftFoot.matrix.rotate(g_leftFootAngle, 1, 0, 0);   // tilt foot forward slightly
+
+  // Scale the foot shape
+  leftFoot.matrix.scale(0.15, 0.15, 0.25);  // make it shorter and flatter than the leg
+
+  leftFoot.render();
+
   // Check the time at the end of the function
   // var duration = performance.now() - startTime;
   // sendTextToHtml(" as ")
