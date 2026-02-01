@@ -84,8 +84,10 @@ const TRIANGLE = 1;
 const CIRCLE = 2;
 
 // Global UI Elements
-let g_globalAngleX = -6;
-let g_globalAngleY = 20;
+// let g_globalAngleX = -6;
+// let g_globalAngleY = 20;
+let g_globalAngleX = 0;
+let g_globalAngleY = 0;
 let g_mouseDown = false;
 let g_lastX = 0;
 let g_lastY = 0;
@@ -94,6 +96,12 @@ let g_yellowAngle = 0;
 let g_magentaAngle = 0;
 let g_tongueAngle = 0;
 
+let g_leftArmAngle = 225;
+let g_leftElbowAngle = 45;
+
+let g_rightArmAngle = 225;
+let g_rightElbowAngle = 45;
+
 // Animations
 let g_yellowAnimation = false;
 let g_tongueAnimation = false;
@@ -101,14 +109,17 @@ let g_tongueAnimation = false;
 
 function UIElements(){
   // Color Slider Events
-  document.getElementById('yellowSlide').addEventListener('mousemove', function() {g_yellowAngle = this.value; renderShapes(); })
-  document.getElementById('magentaSlide').addEventListener('mousemove', function() {g_magentaAngle = this.value; renderShapes(); })
-  document.getElementById('tongueSlide').addEventListener('mousemove', function() {g_tongueAngle = this.value; renderShapes(); })
+  document.getElementById('leftArmSlide').addEventListener('mousemove', function() {g_leftArmAngle = this.value; renderShapes(); })
+  document.getElementById('leftElbowSlide').addEventListener('mousemove', function() {g_leftElbowAngle = this.value; renderShapes(); })
+
+  document.getElementById('rightArmSlide').addEventListener('mousemove', function() {g_rightArmAngle = this.value; renderShapes(); })
+  document.getElementById('rightElbowSlide').addEventListener('mousemove', function() {g_rightElbowAngle = this.value; renderShapes(); })
+  // document.getElementById('tongueSlide').addEventListener('mousemove', function() {g_tongueAngle = this.value; renderShapes(); })
 
 
   // // Animation
-  // document.getElementById('yellowOn').onclick = function(){g_yellowAnimation=true}
-  // document.getElementById('yellowOff').onclick = function(){g_yellowAnimation=false}
+  document.getElementById('yellowOn').onclick = function(){g_tongueAnimation=true}
+  document.getElementById('yellowOff').onclick = function(){g_tongueAnimation=false}
 
 
   // Mouse rotation controls and Shift Click Logic
@@ -266,39 +277,83 @@ function renderShapes(){
 
   // Draw Body
   var body = new Sphere();
-  body.matrix = new Matrix4();  
+  var bodyMat = new Matrix4(body.matrix);  
   body.color = [0.35, 0.3, 0.25, 1.0];
   body.matrix.rotate(15, 1, 0, 0);
   body.matrix.translate(0, 0.08, 0.7);
   body.matrix.scale(0.25, 0.20, 0.5);
   body.render();
 
-  // // Draw a left arm
-  // var leftArm = new Cube();
-  // leftArm.color = [1, 1, 0, 1];
-  // leftArm.matrix.setTranslate(0, -.5, 0.0);
-  // leftArm.matrix.rotate(-g_yellowAngle, -0,0,1);
-  // // leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
-  // // if(g_yellowAnimation) {
-  // //     leftArm.matrix.rotate(45*Math.sin(g_seconds), 0, 0, 1);
-  // // } else{
-  // //     leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
-  // // }
-  // var yellowCoordinatesMat = new Matrix4(leftArm.matrix); // Copy of arm
-  // leftArm.matrix.scale(0.25, .7, 0.5);
-  // leftArm.matrix.translate(-0.5, 0, 0);
-  // leftArm.render();
+  // Draw a right arm
+  var rightArm = new Cube();
+  rightArm.matrix = new Matrix4(bodyMat)
 
-  // // Test Box
-  // var box = new Cube;
-  // box.color = [1,0,1,1];
-  // box.matrix = yellowCoordinatesMat;
-  // box.matrix.translate(0, .7, 0);
-  // box.matrix.rotate(-g_magentaAngle, 0, 0, 1);
-  // box.matrix.scale(.3, .3, .3);
-  // box.matrix.translate(-.5, 0, -.0001);
-  // box.render();
+  rightArm.color = [0.35, 0.3, 0.25, 1.0];
+  rightArm.matrix.setTranslate(-0.16, -.4, .3);
+  rightArm.matrix.rotate(-35, 1,0,0);
 
+  var rightArmMat = new Matrix4(rightArm.matrix);  
+  rightArm.matrix.scale(0.15, .15, 0.5);
+
+  rightArm.matrix.translate(-0.5, 0, 0);
+  rightArm.render();
+
+  // Right Elbow
+  var rightElbow = new Cube();
+  rightElbow.matrix = new Matrix4(rightArmMat);
+  var rightElbowMat = new Matrix4(rightElbow.matrix);  
+  rightElbow.color = [0.35, 0.3, 0.25, 1.0];
+  rightElbow.matrix.translate(-0.234, -.4, -0.1);
+  rightElbow.matrix.scale(0.15, .15, 0.4);  
+  rightElbow.render();
+
+  // Draw a left arm
+  var leftArm = new Cube();
+  leftArm.matrix = new Matrix4(bodyMat);
+
+  leftArm.color = [0.35, 0.3, 0.25, 1.0];
+  leftArm.matrix.translate(0.15, 0, .5);
+  leftArm.matrix.rotate(-g_leftArmAngle, 1, 0,0);
+
+  var leftArmMat = new Matrix4(leftArm.matrix);  
+
+  leftArm.matrix.scale(0.15, .15, 0.4);
+  leftArm.matrix.translate(-0.5, 0, 0);
+  leftArm.render();
+
+  // Left Elbow
+  var leftElbow = new Cube();
+  leftElbow.matrix = new Matrix4(leftArmMat);
+  leftElbow.color = [0.35, 0.3, 0.25, 1.0];
+  leftElbow.matrix.translate(-0.075, 0.1, 0.35);
+
+  leftElbow.matrix.rotate(g_leftElbowAngle,1,0,0);
+
+  leftElbow.matrix.scale(0.15, .15, 0.4);  
+  leftElbow.matrix.translate(0, -0.5, 0);
+  leftElbow.render();
+
+  // Draw Nails
+  // var leftHand = new Cube();
+  // leftHand.matrix = new Matrix4(leftElbowMat);
+  // leftHand.color = [0.6, 0.6, 0.6, 1];
+  // leftHand.matrix.translate(0.1, -.3, -0.15);
+  // leftHand.matrix.scale(.03, .03, 0.05);  
+  // leftHand.render();
+
+  // var leftHand2 = new Cube();
+  // leftHand2.matrix = new Matrix4(leftElbowMat);
+  // leftHand2.color = [0.6, 0.6, 0.6, 1];
+  // leftHand2.matrix.translate(0.15, -.3, -0.15);
+  // leftHand2.matrix.scale(.03, .03, 0.05);  
+  // leftHand2.render();
+
+  // var leftHand3 = new Cube();
+  // leftHand3.matrix = new Matrix4(leftElbowMat);
+  // leftHand3.color = [0.6, 0.6, 0.6, 1];
+  // leftHand3.matrix.translate(0.15, -.3, -0.15);
+  // leftHand3.matrix.scale(.03, .03, 0.05);  
+  // leftHand3.render();
   // Check the time at the end of the function
   // var duration = performance.now() - startTime;
   // sendTextToHtml(" as ")
