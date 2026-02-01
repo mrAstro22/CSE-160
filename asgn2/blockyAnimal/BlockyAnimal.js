@@ -193,15 +193,23 @@ function main() {
 
 var g_startTime = performance.now()/1000.0;
 var g_seconds = performance.now()/1000.0-g_startTime;
+let lastFrameTime = performance.now();
+let fps = 0;
 
 function tick() {
+  const now = performance.now();
   g_seconds = performance.now()/1000.0-g_startTime;
+  const delta = (now - lastFrameTime) / 1000; // seconds since last frame
+  lastFrameTime = now;
   // console.log(performance.now());
-
+  fps = 1 / delta;
+  g_seconds = now / 1000.0 - g_startTime;
   updateAnimationAngles();
 
   // Draw Everything
   renderShapes();
+
+  sendTextToHtml("FPS: " + Math.floor(fps), "numdot");
 
   // Tell browser to update again when it has time
   requestAnimationFrame(tick);
@@ -219,15 +227,16 @@ function updateAnimationAngles() {
       let minAngle = 15;
       let maxAngle = 30;
 
-      g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2
+      g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2;
     }
 
 }
 
+
 function renderShapes(){
 
   // Check the time at the start of this function
-  // var startTime = performance.now();
+  var startTime = performance.now();
   var globalRotMat = new Matrix4();
   globalRotMat.rotate(g_globalAngleX, 1, 0, 0); // tilt
   globalRotMat.rotate(g_globalAngleY, 0, 1, 0); // spin
@@ -450,8 +459,13 @@ function renderShapes(){
   leftFoot.matrix.scale(0.15, 0.15, 0.25);  // make it shorter and flatter than the leg
 
   leftFoot.render();
+}
 
-  // Check the time at the end of the function
-  // var duration = performance.now() - startTime;
-  // sendTextToHtml(" as ")
+function sendTextToHtml(text, htmlID) {
+  var htmlElem = document.getElementById(htmlID);
+  if(!htmlElem) {
+    console.log("Failed to get " + htmlID + " from HTML");
+    return;
+  }
+  htmlElem.innerHTML = text;
 }
