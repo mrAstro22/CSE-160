@@ -1,0 +1,1 @@
+Hello there, for this assignment I referenced the professors videos and recieved assistance from CHATGPT for some portions.
