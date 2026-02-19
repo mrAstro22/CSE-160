@@ -119,6 +119,11 @@ function connectVariablesToGLSL(){
     return;
   }
 
+  u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+  if (!u_ProjectionMatrix) {
+    console.log('Failed to get the storage location of u_ProjectionMatrix');
+    return;
+  }
 
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
@@ -134,18 +139,18 @@ let g_magentaAngle = 0;
 
 function UIElements(){
   // Button Events
-  document.getElementById('green').onclick = function(){g_selectedColor = [0.0,1.0,0.0,1.0]; }
-  document.getElementById('red').onclick = function(){g_selectedColor = [1.0,0.0,0.0,1.0]; }
+  // document.getElementById('green').onclick = function(){g_selectedColor = [0.0,1.0,0.0,1.0]; }
+  // document.getElementById('red').onclick = function(){g_selectedColor = [1.0,0.0,0.0,1.0]; }
 
 
-  document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100; })
-  document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100; })
-  document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100; })
+  // document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100; })
+  // document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100; })
+  // document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100; })
 
-  // Shapes
-  document.getElementById('triangles').onclick = function(){g_selectedType = "triangle" }
-  document.getElementById('squares').onclick = function(){g_selectedType = "square" }
-  document.getElementById('circles').onclick = function(){g_selectedType = "circle" }
+  // // Shapes
+  // document.getElementById('triangles').onclick = function(){g_selectedType = "triangle" }
+  // document.getElementById('squares').onclick = function(){g_selectedType = "square" }
+  // document.getElementById('circles').onclick = function(){g_selectedType = "circle" }
   renderShapes();
 }
 
@@ -160,7 +165,7 @@ function initTextures(gl, n) {
   image.onload = function(){sendTextureToTEXTURE0(image);}
 
   // Tell the browser to load an image
-  image.src = 'sky.jpg';
+  image.src = 'sky.jpeg';
 
   // Add more texture loading
   return true;
@@ -227,11 +232,12 @@ function renderShapes(){
 
   // Pass the projection matrix
   var projMatrix = new Matrix4();
+  // projMatrix.setPerspective(60, canvas.width/canvas.height, 0.1, 100);
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
 
   // Pass the view matrix
   var viewMat = new Matrix4();
-  viewMat.setLookAt(0,0,-1, 0,0,0, 0,1,0);
+  viewMat.setLookAt(0,0,3, 0,0,0, 0,1,0);
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
   // Pass the matrix to u_ModelMatrix attribute
