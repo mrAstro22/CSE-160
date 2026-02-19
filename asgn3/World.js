@@ -10,7 +10,7 @@ var VSHADER_SOURCE = `
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
   void main() {
-    gl_position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
   }`
 
@@ -46,6 +46,7 @@ let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
+let u_whichTexture;
 
 function setupWebGL(){
   // Retrieve <canvas> element
@@ -112,46 +113,34 @@ function connectVariablesToGLSL(){
     return;
   }
 
-  var identityM = newMatrix4();
+  u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
+  if (!u_whichTexture) {
+    console.log('Failed to get the storage location of u_whichTexture');
+    return;
+  }
+
+
+  var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
 
 // Global UI Elements
+let g_globalAngle = 0;
 let g_selectedColor= [1.0,1.0,1.0,1.0];
 let g_selectedSize = 5;
 let g_selectedType = "square";
-let g_circleSegments = 10;
-
+let g_yellowAngle = 0;
+let g_magentaAngle = 0;
 
 function UIElements(){
   // Button Events
   document.getElementById('green').onclick = function(){g_selectedColor = [0.0,1.0,0.0,1.0]; }
   document.getElementById('red').onclick = function(){g_selectedColor = [1.0,0.0,0.0,1.0]; }
-  document.getElementById('eraser').onclick = function(){g_selectedColor = [0.0,0.0,0.0,1.0]; }
-
-  // Circle Segment Slider Events
-  const segSlider = document.getElementById('segSlide');
-  const segValue = document.getElementById('segValue');
-
-  // initialize from HTML
-  g_circleSegments = parseInt(segSlider.value);
-  segValue.textContent = segSlider.value;
-
-  segSlider.addEventListener('input', function () {
-    g_circleSegments = parseInt(this.value);
-    segValue.textContent = this.value;
-  });
 
 
   document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100; })
   document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100; })
   document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100; })
-
-  // Clear Canvas
-  document.getElementById('clear').onclick = function() {g_shapesList = []; renderShapes(); }
-
-  // Size Slider Events
-  document.getElementById('sizeSlide').addEventListener('mouseup', function() {g_selectedSize = this.value; })
 
   // Shapes
   document.getElementById('triangles').onclick = function(){g_selectedType = "triangle" }
@@ -164,11 +153,11 @@ function initTextures(gl, n) {
 
   var image = new Image();
   if(!image) {
-    console.log('Failed to creat the image object');
+    console.log('Failed to create the image object');
     return false;
   }
   // Register the event hander to be called on loading an image
-  image.onload = function(){sendTextureToTEXTURE0(0, u_Sampler0, image);}
+  image.onload = function(){sendTextureToTEXTURE0(image);}
 
   // Tell the browser to load an image
   image.src = 'sky.jpg';
@@ -226,38 +215,79 @@ function main() {
 var g_startTime=performance.now()/1000.0;
 var g_seconds=performance.now()/1000.0-g_startTime;
 
-
-// Extract the event click and return it in WebGL coordinates
-function convertCoords(ev){
-  var x = ev.clientX;
-  var y = ev.clientY;
-  var rect = ev.target.getBoundingClientRect();
-
-  x = ((x-rect.left) - canvas.width/2)/(canvas.width/2);
-  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
-
-  return([x,y]);
+function tick(){
+  g_seconds = performance.now()/1000.0 - g_startTime;
+  renderShapes();
+  requestAnimationFrame(tick);
 }
 
 function renderShapes(){
+
+  // var startTime = performance.now();
+
+  // Pass the projection matrix
+  var projMatrix = new Matrix4();
+  gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
+
+  // Pass the view matrix
+  var viewMat = new Matrix4();
+  viewMat.setLookAt(0,0,-1, 0,0,0, 0,1,0);
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
+
+  // Pass the matrix to u_ModelMatrix attribute
+  var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
+
   // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  // Render each shape in the list
+  var body = new Cube();
+  body.color = [1.0, 0.0, 0.0, 1.0];
+  body.textureNum = 0;
+  body.matrix.translate(-.25, -.75, 0.0);
+  body.matrix.rotate(-5,1,0,0);
+  body.matrix.scale(0.5, 0.3, 0.5);
+  body.render();
 
-  var len = g_shapesList.length;
-  for(var i = 0; i < len; i++) {
-    g_shapesList[i].render();
-  }
+  // Yellow Arm
+  var yellow = new Cube();
+  yellow.color = [1.0, 1.0, 0.0, 1.0];
+  yellow.matrix.setTranslate(0, -0.5, 0.0);
+  yellow.matrix.rotate(-5, 1, 0, 0);
+  yellow.matrix.rotate(-g_yellowAngle, 0, 0, 1);
+  var yellowCoordinatesMat = new Matrix4(yellow.matrix);
+  yellow.matrix.scale(0.25, 0.7, 0.5);
+  yellow.matrix.translate(-0.5, 0, 0);
+  yellow.render();
+
+  // Magenta Box
+  var magenta = new Cube();
+  magenta.color = [1.0, 0.0, 1.0, 1.0];
+  magenta.textureNum = 0;
+  magenta.matrix = yellowCoordinatesMat;
+  magenta.matrix.translate(0, 0.65, 0);
+  magenta.matrix.rotate(g_magentaAngle, 0, 0, 1);
+  magenta.matrix.scale(0.3, 0.3, 0.3);
+  magenta.matrix.translate(-0.5, 0, -0.001);
+  magenta.render();
+
+  // Ground Plane
+  var ground = new Cube();
+  ground.matrix.translate(0, 0, -1);
+  ground.matrix.scale(2, 0.1, 2);
+  ground.render();
 }
 
-function logShapes() {
-  const simplified = g_shapesList.map(shape => ({
-    type: shape.type,
-    position: shape.postion,
-    color: shape.color,
-    size: shape.size,
-    segments: shape.segments || null
-  }));
+// function logShapes() {
+//   const simplified = g_shapesList.map(shape => ({
+//     type: shape.type,
+//     position: shape.position,
+//     color: shape.color,
+//     size: shape.size,
+//     segments: shape.segments || null
+//   }));
   
-  console.log(JSON.stringify(simplified, null, 2));
-}
+//   console.log(JSON.stringify(simplified, null, 2));
+// }

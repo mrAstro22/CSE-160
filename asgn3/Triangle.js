@@ -9,7 +9,7 @@ class Triangle{
   render() {
     var xy = this.postion;
     var rgba = this.color;
-    var size = 5.0;
+    // var size = 5.0;
     
     // Pass the color of a point to u_FragColor variable
     gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
