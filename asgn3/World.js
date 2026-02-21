@@ -38,7 +38,7 @@ var FSHADER_SOURCE = `
 let canvas;
 let gl;
 let a_Position;
-let a_UV
+let a_UV;
 let u_FragColor;
 let u_Size;
 let u_ModelMatrix;
@@ -138,29 +138,20 @@ let g_yellowAngle = 0;
 let g_magentaAngle = 0;
 
 function UIElements(){
-  // Button Events
-  // document.getElementById('green').onclick = function(){g_selectedColor = [0.0,1.0,0.0,1.0]; }
-  // document.getElementById('red').onclick = function(){g_selectedColor = [1.0,0.0,0.0,1.0]; }
-
-
-  // document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100; })
-  // document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100; })
-  // document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100; })
-
-  // // Shapes
-  // document.getElementById('triangles').onclick = function(){g_selectedType = "triangle" }
-  // document.getElementById('squares').onclick = function(){g_selectedType = "square" }
-  // document.getElementById('circles').onclick = function(){g_selectedType = "circle" }
+  document.getElementById('cameraAngle').addEventListener('mousemove', function() {
+    g_globalAngle = this.value;
+  });
   renderShapes();
 }
 
-function initTextures(gl, n) {
+function initTextures() {
 
   var image = new Image();
   if(!image) {
     console.log('Failed to create the image object');
     return false;
   }
+
   // Register the event hander to be called on loading an image
   image.onload = function(){sendTextureToTEXTURE0(image);}
 
@@ -168,6 +159,7 @@ function initTextures(gl, n) {
   image.src = 'sky.jpeg';
 
   // Add more texture loading
+
   return true;
 }
 
@@ -177,6 +169,7 @@ function sendTextureToTEXTURE0(image) {
     console.log('Failed to create the texture object');
     return false;
   }
+
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
   // Enable texture unit0
@@ -187,6 +180,8 @@ function sendTextureToTEXTURE0(image) {
 
   // Set the texture parameters
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
   // Set the texture image
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
@@ -194,8 +189,8 @@ function sendTextureToTEXTURE0(image) {
   // Set the texture unit 0 to the sampler
   gl.uniform1i(u_Sampler0, 0);
 
+  renderShapes();
   // gl.clear(gl.COLOR_BUFFER_BIT);
-  console.log('finished loadTexture');
 }
 
 function main() {
@@ -209,11 +204,13 @@ function main() {
   // Clicking Events for Buttong
   UIElements();
 
-  initTextures(gl, 0);
+  document.onkeydown = keydown;
+
+  initTextures();
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  
+
   requestAnimationFrame(tick);
 }
 
@@ -226,18 +223,39 @@ function tick(){
   requestAnimationFrame(tick);
 }
 
+function keydown(ev) {
+  if(ev.keyCode == 39) { // Right Arrow Key
+    g_eye[0] += 0.2;
+  }
+  else if(ev.keyCode == 37) { // Left Arrow Key
+    g_eye[0] -= 0.2;
+  }
+  else if(ev.keyCode == 38) { // Up Arrow Key
+    g_eye[1] += 0.2;
+  }
+  else if(ev.keyCode == 40) { // Down Arrow Key
+    g_eye[1] -= 0.2;
+  }
+  renderShapes();
+  console.log(ev.keyCode);
+}
+
+var g_eye = [0,0,3];
+var g_at = [0,0,0];
+var g_up = [0,1,0];
+
 function renderShapes(){
 
   // var startTime = performance.now();
 
   // Pass the projection matrix
   var projMatrix = new Matrix4();
-  // projMatrix.setPerspective(60, canvas.width/canvas.height, 0.1, 100);
+  projMatrix.setPerspective(60, canvas.width/canvas.height, .1, 100);
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
 
   // Pass the view matrix
   var viewMat = new Matrix4();
-  viewMat.setLookAt(0,0,3, 0,0,0, 0,1,0);
+  viewMat.setLookAt(0,0,3, 0,0,-100, 0,1,0);
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
   // Pass the matrix to u_ModelMatrix attribute
@@ -246,7 +264,7 @@ function renderShapes(){
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  // gl.clear(gl.COLOR_BUFFER_BIT);
 
   // Render each shape in the list
   var body = new Cube();
@@ -271,7 +289,7 @@ function renderShapes(){
   // Magenta Box
   var magenta = new Cube();
   magenta.color = [1.0, 0.0, 1.0, 1.0];
-  magenta.textureNum = 0;
+  magenta.textureNum = -1;
   magenta.matrix = yellowCoordinatesMat;
   magenta.matrix.translate(0, 0.65, 0);
   magenta.matrix.rotate(g_magentaAngle, 0, 0, 1);

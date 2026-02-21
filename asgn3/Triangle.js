@@ -97,7 +97,7 @@ function drawTriangle3DUV(vertices, uv){
 
     // Create a buffer object for UV
     var uvBuffer = gl.createBuffer();
-    if(!uvBuffer) {
+    if (!uvBuffer) {
       console.log('Failed to create the buffer object');
     }
     
@@ -111,9 +111,6 @@ function drawTriangle3DUV(vertices, uv){
 
     // Enable the assignment to a_Position variable
     gl.enableVertexAttribArray(a_UV);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 
     // Draw the triangle
     gl.drawArrays(gl.TRIANGLES, 0, n);
