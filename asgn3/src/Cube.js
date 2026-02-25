@@ -54,13 +54,25 @@ class Cube {
     // Pass the matrix to u_ModelMatrix attribute
     gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-    // Front of the Cube
-    drawTriangle3DUV([0,0,0 , 1,1,0, 1,0,0], [1,0, 0,1, 1,1]);
-    drawTriangle3DUV([0,0,0 , 0,1,0, 1,1,0], [0,0, 0,1, 1,1]);
 
 
     // Pass the color of a point to u_FragColor uniform variable
     gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);
+
+
+  // Front face
+    drawTriangle3DUV(
+      [0,0,0,   1,0,0,   1,1,0],
+      [0,1,     0,0,     1,0]
+    );
+    drawTriangle3DUV(
+      [0,0,0,   1,1,0,   0,1,0],
+      [0,1,     1,0,     1,1]
+    );
+
+    // Back of Cube 
+    drawTriangle3DUV( [1,0,1, 1,1,1, 0,1,1], [0,0, 1,0, 1,1] ); 
+    drawTriangle3DUV( [1,0,1, 0,1,1, 0,0,1], [0,0, 1,1, 0,1] );
 
     // Top of Cube
     drawTriangle3DUV(
@@ -72,15 +84,6 @@ class Cube {
       [0,0,    1,1,    1,0]
     );
 
-    // Back of Cube
-    drawTriangle3DUV(
-      [1,0,1,  1,1,1,  0,1,1],
-      [0,0,    1,0,    1,1]
-    );
-    drawTriangle3DUV(
-      [1,0,1,  0,1,1,  0,0,1],
-      [0,0,    1,1,    0,1]
-    );
 
     // Left of Cube
     drawTriangle3DUV(
@@ -111,5 +114,24 @@ class Cube {
       [0,0,1,  1,0,0,  0,0,0],
       [0,0,    1,1,    0,1]
     );
+  }
+  renderFaster() {
+    const rgba = this.color;
+    // Pass the texture number
+    gl.uniform1i(u_whichTexture, this.textureNum);
+
+    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+
+      // Pass the matrix to u_ModelMatrix attribute
+    gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+
+    if (g_vertexBuffer== null) {
+      initTriangle3D();
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.cubeVerts), gl.STATIC_DRAW);
+
+    // Draw the cube
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
   }
 }
