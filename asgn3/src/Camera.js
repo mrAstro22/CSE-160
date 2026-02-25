@@ -34,15 +34,20 @@ class Vector {
       this.x*v.y - this.y*v.x
     );
   }
+   dot(v) {
+    return this.x*v.x + this.y*v.y + this.z*v.z;
+  }
 }
 
 class Camera {
     constructor() {
-    // this.type = 'camera';
-    // this.angle = 0.0; // Camera angle in degrees
-    this.eye = new Vector(0,0,3);
-    this.at = new Vector(0,0,2);
-    this.up = new Vector(0,1,0);
+        // this.type = 'camera';
+        // this.angle = 0.0; // Camera angle in degrees
+        this.eye = new Vector(0,0,3);
+        this.at = new Vector(0,0,2);
+        this.up = new Vector(0,1,0);
+        this.yawAngle = 0;   // horizontal rotation around Y
+        this.pitchAngle = 0; // vertical rotation around X
     }
 
     forward() {
@@ -68,5 +73,35 @@ class Camera {
         var r = f.cross(this.up).normalize();
         this.eye = this.eye.add(r.multiply(0.1));
         this.at = this.at.add(r.multiply(0.1));
+    }
+    yaw(angleDeg) {
+        // Rotate camera left/right around the up vector
+        const angleRad = angleDeg * Math.PI / 180;
+        const f = this.at.subtract(this.eye);
+        const cosA = Math.cos(angleRad);
+        const sinA = Math.sin(angleRad);
+
+        // Rotate using up vector as axis (simplified assuming up = y-axis)
+        const newX = f.x * cosA - f.z * sinA;
+        const newZ = f.x * sinA + f.z * cosA;
+
+        this.at = new Vector(this.eye.x + newX, this.at.y, this.eye.z + newZ);
+    }
+
+    pitch(angleDeg) {
+        // Rotate camera up/down around the right vector
+        const angleRad = angleDeg * Math.PI / 180;
+        const f = this.at.subtract(this.eye);
+        const r = f.cross(this.up).normalize();
+
+        const cosA = Math.cos(angleRad);
+        const sinA = Math.sin(angleRad);
+
+        // Rotate f around r using Rodrigues' rotation formula
+        const newF = f.multiply(cosA)
+                     .add(r.cross(f).multiply(sinA))
+                     .add(r.multiply(r.dot(f) * (1 - cosA)));
+
+        this.at = this.eye.add(newF);
     }
 }

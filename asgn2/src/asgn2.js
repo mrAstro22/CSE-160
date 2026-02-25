@@ -229,7 +229,6 @@ function updateAnimationAngles() {
 
       g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2;
     }
-
 }
 
 

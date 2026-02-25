@@ -40,6 +40,33 @@ class Cube {
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
     this.textureNum = -1; // Default to no texture
+    this.cubeVerts = new Float32Array([
+      // Front face (fixed UVs)
+      0,0,0,  0,1,   1,0,0,  0,0,   1,1,0,  1,0,
+      0,0,0,  0,1,   1,1,0,  1,0,   0,1,0,  1,1,
+
+      // Back face
+      1,0,1, 0,0,   1,1,1, 1,0,   0,1,1, 1,1,
+      1,0,1, 0,0,   0,1,1, 1,1,   0,0,1, 0,1,
+
+      // Top face
+      0,1,0, 0,0,   0,1,1, 0,1,   1,1,1, 1,1,
+      0,1,0, 0,0,   1,1,1, 1,1,   1,1,0, 1,0,
+
+      // Bottom face
+      0,0,1, 0,0,   1,0,1, 1,0,   1,0,0, 1,1,
+      0,0,1, 0,0,   1,0,0, 1,1,   0,0,0, 0,1,
+
+      // Right face
+      1,0,0, 0,0,   1,1,0, 1,0,   1,1,1, 1,1,
+      1,0,0, 0,0,   1,1,1, 1,1,   1,0,1, 0,1,
+
+      // Left face
+      0,0,0, 0,0,   0,1,0, 1,0,   0,1,1, 1,1,
+      0,0,0, 0,0,   0,1,1, 1,1,   0,0,1, 0,1
+    ]);
+
+    this.bufferInitialized = false;
   }
 
   render() {
@@ -115,23 +142,32 @@ class Cube {
       [0,0,    1,1,    0,1]
     );
   }
+  initBuffer() {
+    if (!g_vertexBuffer) {
+      g_vertexBuffer = gl.createBuffer();
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.cubeVerts, gl.STATIC_DRAW);
+
+    // Set up interleaved attributes: x,y,z,u,v
+    const FSIZE = this.cubeVerts.BYTES_PER_ELEMENT;
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE*5, 0);
+    gl.enableVertexAttribArray(a_Position);
+    gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE*5, FSIZE*3);
+    gl.enableVertexAttribArray(a_UV);
+
+    this.bufferInitialized = true;
+  }
+
   renderFaster() {
-    const rgba = this.color;
-    // Pass the texture number
+    if (!this.bufferInitialized) this.initBuffer();
+
+    // Pass uniforms
     gl.uniform1i(u_whichTexture, this.textureNum);
-
-    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-
-      // Pass the matrix to u_ModelMatrix attribute
+    gl.uniform4f(u_FragColor, this.color[0], this.color[1], this.color[2], this.color[3]);
     gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-    if (g_vertexBuffer== null) {
-      initTriangle3D();
-    }
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.cubeVerts), gl.STATIC_DRAW);
-
-    // Draw the cube
+    // Draw cube
     gl.drawArrays(gl.TRIANGLES, 0, 36);
   }
 }
