@@ -533,7 +533,7 @@ function drawMap() {
         }
         wall.matrix.setIdentity();
         wall.matrix.translate(x - WORLD_SIZE/2, h * 1.0 - 0.75, y - WORLD_SIZE/2);
-        wall.renderFaster();
+        wall.renderNormal();
       }
     }
   }
@@ -578,7 +578,7 @@ function renderShapes(){
   floor.matrix.translate(0, -0.75, 0);
   floor.matrix.scale(32, 0.01, 32);
   floor.matrix.translate(-0.5, 0, -0.5);
-  floor.renderFaster();
+  floor.renderNormal();
 
   // Draw the skybox
   var skybox = new Cube();
@@ -586,7 +586,7 @@ function renderShapes(){
   skybox.textureNum = 0;
   skybox.matrix.scale(50, 50, 50);
   skybox.matrix.translate(-0.5, -0.5, -0.5);
-  skybox.renderFaster();
+  skybox.renderNormal();
 
   // Render each shape in the list
   var body = new Cube();
@@ -594,7 +594,7 @@ function renderShapes(){
   body.textureNum = 3;
   body.matrix.translate(-0.5, -.75, 0.0);
   body.matrix.scale(1, 1, 1);
-  body.renderFaster();
+  body.renderNormal();
 
   // Render each shape in the list
   var hint = new Cube();
@@ -602,7 +602,7 @@ function renderShapes(){
   hint.textureNum = 5;
   hint.matrix.translate(0.5, -.75, 0.0);
   hint.matrix.scale(1, 1, 1);
-  hint.renderFaster();
+  hint.renderNormal();
 
   drawMap();
   // animal(15,g_mapHeights[17][17] + 0.75,18);
