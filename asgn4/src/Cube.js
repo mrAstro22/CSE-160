@@ -153,7 +153,7 @@ class Cube {
 
 
     // Pass the color of a point to u_FragColor uniform variable
-    gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);
+    // gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);
 
     // FRONT (normal: 0,0,-1)
     drawTriangle3DUVNormal(

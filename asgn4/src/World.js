@@ -1,4 +1,5 @@
 // World.js (c) 2012 matsuda
+
 // Vertex shader program
 var VSHADER_SOURCE = `
   precision mediump float;
@@ -7,14 +8,16 @@ var VSHADER_SOURCE = `
   attribute vec3 a_Normal;
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
-    v_UV = vec2(1.0 - a_UV.y, a_UV.x);
+    v_UV = vec2(a_UV.y, 1.0 - a_UV.x);
     v_Normal = a_Normal;
+    v_VertPos = u_ModelMatrix * a_Position;
   }`
 
 // Fragment shader program
@@ -25,6 +28,11 @@ var FSHADER_SOURCE = `
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0, u_Sampler1, u_Sampler2, u_Sampler3, u_Sampler4, u_Sampler5;
   uniform int u_whichTexture;
+  uniform vec3 u_lightPos;
+  uniform vec3 u_cameraPos;
+  uniform bool u_lightOn;
+  varying vec4 v_VertPos;
+
   void main() {
     if(u_whichTexture == -2) {    
       gl_FragColor = u_FragColor;
@@ -45,6 +53,41 @@ var FSHADER_SOURCE = `
     } else if (u_whichTexture == 5) {
       gl_FragColor = texture2D(u_Sampler5, v_UV);
     }
+
+    vec3 lightVector = u_lightPos - vec3(v_VertPos);
+    float r = length(lightVector);
+
+    // Red Green Distance Visualization
+    // if (r < 1.0) {
+    //   gl_FragColor = vec4(1, 0, 0, 1);
+    // } else if (r < 2.0){
+    //   gl_FragColor = vec4(0,1,0,1);
+    // }
+
+    // Light Falloff Visualization
+    // gl_FragColor = vec4(vec3(gl_FragColor)/(r*r), 1);
+
+    // N dot L Visualization
+    vec3 L = normalize(lightVector);
+    vec3 N = normalize(v_Normal);
+    float nDotL = max(dot(N, L), 0.0);
+
+    float specular = 0.0;
+    if(u_whichTexture != 0) { // assuming 2 is your wall texture
+        vec3 R = reflect(-L,N);
+        vec3 E = normalize(u_cameraPos-vec3(v_VertPos));
+        specular = pow(max(dot(E,R), 0.0), 100.0);
+    }
+
+    vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
+    vec3 ambient = vec3(gl_FragColor) * 0.2;
+    if (u_lightOn) {
+      if (u_whichTexture == 0) {
+        gl_FragColor = vec4(specular+diffuse+ambient, 1.0);
+      } else {
+        gl_FragColor = vec4(diffuse+ambient, 1.0);
+      }
+    }
   }`
 
 
@@ -62,6 +105,9 @@ let u_GlobalRotateMatrix;
 let u_Sampler0, u_Sampler1, u_Sampler2, u_Sampler3, u_Sampler4, u_Sampler5;
 let u_whichTexture;
 let a_Normal;
+let u_lightPos;
+let u_cameraPos;
+let u_lightOn;
 
 function setupWebGL(){
   // Retrieve <canvas> element
@@ -80,6 +126,24 @@ function connectVariablesToGLSL(){
   // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
     console.log('Failed to intialize shaders.');
+    return;
+  }
+
+  u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+  if (!u_cameraPos) {
+    console.log('Failed to get the storage location of u_cameraPos');
+    return;
+  }
+
+  u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
+  if (!u_lightOn) {
+    console.log('Failed to get the storage location of u_lightOn');
+    return;
+  }
+
+  u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+  if (!u_lightPos) {
+    console.log('Failed to get the storage location of u_lightPos');
     return;
   }
 
@@ -214,6 +278,11 @@ let g_cameraKeyboardAngle = 0;
 let g_camera = new Camera();
 
 let g_NormalOn = false;
+
+// Light Positions
+let g_lightPos = [0,5,-2];
+let g_lightOn = false;
+
 function UIElements(){
   window.addEventListener('keydown', (e) => {
     const step = 5; // degrees per press
@@ -276,6 +345,33 @@ function UIElements(){
     }
   });
 
+  document.getElementById('lightX').addEventListener('mousemove', function(ev) {
+      if(ev.buttons == 1) {
+      g_lightPos[0] = this.value/10;
+    }
+  });
+
+  document.getElementById('lightY').addEventListener('mousemove', function(ev) {
+    if(ev.buttons == 1) { 
+      g_lightPos[1] = this.value/10;
+    }
+  });
+
+  document.getElementById('lightZ').addEventListener('mousemove', function(ev) {
+    if (ev.buttons == 1) {
+      g_lightPos[2] = this.value/10;
+    }
+  });
+
+  document.getElementById("normalToggleBtn").onclick = function() {
+    g_NormalOn = !g_NormalOn;
+    this.textContent = g_NormalOn ? "Normals: ON" : "Normals: OFF";
+  };
+
+  document.getElementById("lightOnBtn").onclick = function() {
+    g_lightOn = !g_lightOn;
+    this.textContent = g_lightOn ? "Light: ON" : "Light: OFF";
+  };
   renderShapes();
 }
 
@@ -405,6 +501,8 @@ function main() {
   // Setup GLSL shader programs and connect GLSL variables
   connectVariablesToGLSL();
 
+  car = new Model("carEdited.obj");
+
   // Clicking Events for Buttong
   UIElements();
 
@@ -449,16 +547,17 @@ function updateAnimationAngles() {
     // if(g_yellowAnimation) {
     //   g_yellowAngle = 45*Math.sin(g_seconds);
     // }
-    if(g_tongueAnimation) {
-      g_tongueAngle = 30*Math.sin(30 * g_seconds);
-    }
-    if(g_standAnimation) {
-      let raw = Math.sin(g_seconds);   // -1 to 1
-      let minAngle = 15;
-      let maxAngle = 30;
+    // if(g_tongueAnimation) {
+    //   g_tongueAngle = 30*Math.sin(30 * g_seconds);
+    // }
+    // if(g_standAnimation) {
+    //   let raw = Math.sin(g_seconds);   // -1 to 1
+    //   let minAngle = 15;
+    //   let maxAngle = 30;
 
-      g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2;
-    }
+    //   g_bodyAngle = minAngle + (raw + 1) * (maxAngle - minAngle) / 2;
+    // }
+    g_lightPos[0] = cos(g_seconds);
 }
 
 function keydown(ev) {
@@ -476,9 +575,6 @@ function keydown(ev) {
   }
 }
 
-// var g_eye = [0,0,3];
-// var g_at = [0,0,0];
-// var g_up = [0,1,0];
 // Seeded random number generator
 function seededRandom(seed) {
     let value = seed % 2147483647;
@@ -529,7 +625,8 @@ function drawMap() {
           wall.textureNum = 4; // Diamond texture for the "treasure"
         }
         else {
-          wall.textureNum = 2;
+          if (g_NormalOn) wall.textureNum = -3; // Normal visualization
+          else wall.textureNum = 2;
         }
         wall.matrix.setIdentity();
         wall.matrix.translate(x - WORLD_SIZE/2, h * 1.0 - 0.75, y - WORLD_SIZE/2);
@@ -538,6 +635,8 @@ function drawMap() {
     }
   }
 }
+
+// let car = new Model("carEdited.obj");
 
 function renderShapes(){
 
@@ -565,16 +664,42 @@ function renderShapes(){
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  // Pass the Light Position to GLSL
+  gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+
+  // Pass the Camera Position to GLSL
+  gl.uniform3f(u_cameraPos, g_camera.eye.x, g_camera.eye.y, g_camera.eye.z);
+
+  // Turn Light ON/OFF
+  gl.uniform1i(u_lightOn, g_lightOn);
+
+  // Draw the Light
+  var light = new Cube();
+  light.color = [2,2,0,1];
+  light.textureNum = -2;
+  light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+  light.matrix.scale(-0.1, -0.1, -0.1);
+  light.matrix.translate(-0.5, -0.5, -0.5);
+  light.renderNormal();
+
+  car.matrix.setIdentity();
+  car.matrix.scale(0.6, 0.5, 0.5);
+  car.matrix.rotate(240, 0, 1, 0);
+  car.matrix.translate(7, 0, 0);
+  car.render();
+
+  // Draw the normal sphere
   var sp = new NormalSphere();
   if (g_NormalOn) sp.textureNum = -3;
-  sp.matrix.translate(-1,-1.5,-1.5);
+  sp.matrix.translate(-1,0,-1.5);
   // sp.matrix.scale(0,0.5,0);
   sp.render();
   
   // Draw the floor
   var floor = new Cube();
   floor.color = [1, 0, 0, 1.0];
-  floor.textureNum = 1;
+  if (g_NormalOn) floor.textureNum = -3;
+  else floor.textureNum = 1;
   floor.matrix.translate(0, -0.75, 0);
   floor.matrix.scale(32, 0.01, 32);
   floor.matrix.translate(-0.5, 0, -0.5);
@@ -583,15 +708,17 @@ function renderShapes(){
   // Draw the skybox
   var skybox = new Cube();
   skybox.color = [1, 1, 1, 1.0];
-  skybox.textureNum = 0;
-  skybox.matrix.scale(50, 50, 50);
+  if (g_NormalOn) skybox.textureNum = -3;
+  else skybox.textureNum = 0;
+  skybox.matrix.scale(-50, -50, -50);
   skybox.matrix.translate(-0.5, -0.5, -0.5);
   skybox.renderNormal();
 
   // Render each shape in the list
   var body = new Cube();
   body.color = [1.0, 0.0, 0.0, 1.0];
-  body.textureNum = 3;
+  if (g_NormalOn) body.textureNum = -3;
+  else body.textureNum = 3;
   body.matrix.translate(-0.5, -.75, 0.0);
   body.matrix.scale(1, 1, 1);
   body.renderNormal();
@@ -599,245 +726,14 @@ function renderShapes(){
   // Render each shape in the list
   var hint = new Cube();
   hint.color = [1.0, 0.0, 0.0, 1.0];
-  hint.textureNum = 5;
+  if (g_NormalOn) hint.textureNum = -3;
+  else hint.textureNum = 5;
   hint.matrix.translate(0.5, -.75, 0.0);
   hint.matrix.scale(1, 1, 1);
   hint.renderNormal();
 
   drawMap();
-  // animal(15,g_mapHeights[17][17] + 0.75,18);
 }
-
-// function animal(worldX, worldY, worldZ) {
-//   gl.uniform1i(u_whichTexture, -2); // plain color
-//   let worldMatrix = new Matrix4();
-//   worldMatrix.translate(
-//     worldX - WORLD_SIZE/2,
-//     worldY - 0.75, 
-//     worldZ - WORLD_SIZE/2
-//   );
-//   worldMatrix.rotate(180, 0, 1, 0);
-//  // Draw Head
-//   var head = new Sphere();
-//   head.matrix = new Matrix4(worldMatrix);
-//   head.matrix.translate(0, 0, 0.35);
-
-//   // Save joint space BEFORE scale
-//   var headJoint = new Matrix4(head.matrix);
-
-//   // HEAD SHAPE
-//   head.color = [0.35, 0.3, 0.25, 1.0];
-//   head.textureNum = -2;
-//   head.matrix.scale(0.25, 0.22, 0.25);
-//   head.render();
-
-//   // Draw Face
-//   var face = new Sphere();
-//   face.matrix = new Matrix4(headJoint);  // attach to head JOINT
-//   face.color = [0.7, 0.6, 0.5, 1.0];
-//   face.textureNum = -2;
-//   face.matrix.translate(0, 0, -0.095);
-
-//   var faceJoint = new Matrix4(face.matrix);
-
-//   face.matrix.scale(0.2, 0.16, 0.18);
-//   face.render();
-
-
-//   var eye1 = new Sphere();
-//   eye1.matrix = new Matrix4(faceJoint);
-//   eye1.color = [0,0,0,1];
-//   eye1.textureNum = -2;
-//   eye1.matrix.translate(-0.07, 0.05, -0.125);
-//   eye1.matrix.scale(0.03,0.03,0.03);
-//   eye1.render();
-
-//   var eye2 = new Sphere();
-//   eye2.matrix = new Matrix4(faceJoint);
-//   eye2.color = [0,0,0,1];
-//   eye2.textureNum = -2;
-//   eye2.matrix.translate(0.07, 0.05, -0.125);
-//   eye2.matrix.scale(0.03,0.03,0.03);
-//   eye2.render();
-
-//   var nose = new Sphere();
-//   nose.matrix = new Matrix4(faceJoint);
-//   nose.color = [0,0,0,1];
-//   nose.textureNum = -2;
-//   nose.matrix.translate(0, 0.0, -0.15);
-//   nose.matrix.scale(0.04,0.04,0.04);
-//   nose.render();
-
-
-//   var mouth = new Sphere();
-//   mouth.matrix = new Matrix4(faceJoint);
-//   mouth.color = [0,0,0,1];
-//   mouth.matrix.translate(0, -0.06, -0.15);
-//   mouth.matrix.scale(0.08,0.02,0.02);
-//   mouth.render();
-
-
-//   // if (g_tongueAnimation) {
-//   //   var tongue = new Sphere();
-//   //   tongue.matrix = new Matrix4(faceJoint);
-//   //   tongue.color = [1.0, 0.3, 0.4, 1.0];
-
-//   //   // joint position
-//   //   tongue.matrix.translate(0, -0.04, -0.12);
-
-//   //   // point downward first
-//   //   tongue.matrix.rotate(-40, 1, 0, 0);
-
-//   //   // sway left-right
-//   //   tongue.matrix.rotate(g_tongueAngle, 0, 1, 0);
-
-//   //   tongue.matrix.scale(0.05, 0.01, 0.12);
-//   //   tongue.render();
-//   // }
-
-
-//   // Draw Body
-//   var body = new Sphere();
-//   body.matrix = new Matrix4(worldMatrix); 
-//   body.color = [0.35, 0.3, 0.25, 1.0];
-//   body.textureNum = -2;
-//   body.matrix.rotate(g_bodyAngle, 1, 0, 0);
-//   if (g_standAnimation) {
-//     body.matrix.rotate(g_bodyAngle, 1, 0, 0);
-//   }
-//   body.matrix.translate(0, 0.08, 0.7);
-//   var bodyMat = new Matrix4(body.matrix);  
-//   body.matrix.scale(0.25, 0.20, 0.5);
-//   body.render();
-
-
-//   // Draw a right arm
-//   var rightArm = new Cube();
-//   rightArm.matrix = new Matrix4(bodyMat);
-
-//   rightArm.color = [0.35, 0.3, 0.25, 1.0];
-//   rightArm.textureNum = -2;
-//   rightArm.matrix.translate(-.16, 0.04, -.18);
-//   rightArm.matrix.rotate(-g_rightArmAngle, 1,0,0);
-
-//   var rightArmMat = new Matrix4(rightArm.matrix);  
-//   rightArm.matrix.scale(0.15, .15, 0.5);
-
-//   rightArm.matrix.translate(-0.5, 0, 0);
-//   rightArm.render();
-
-//   // Right Elbow
-//   var rightElbow = new Cube();
-//   rightElbow.matrix = new Matrix4(rightArmMat);
-//   rightElbow.color = [0.35, 0.3, 0.25, 1.0];
-//   rightElbow.textureNum = -2;
-//   rightElbow.matrix.translate(-0.075, 0.09, 0.45);
-//   rightElbow.matrix.rotate(g_rightElbowAngle,1,0,0);
-
-//   rightElbow.matrix.scale(0.15, .15, 0.4);  
-//   rightElbow.matrix.translate(0, -0.5, 0);
-//   rightElbow.render();
-
-//   // Draw a left arm
-//   var leftArm = new Cube();
-//   leftArm.matrix = new Matrix4(bodyMat);
-
-//   leftArm.color = [0.35, 0.3, 0.25, 1.0];
-//   leftArm.textureNum = -2;
-//   leftArm.matrix.translate(.16, 0, -.18);
-//   leftArm.matrix.rotate(-g_leftArmAngle, 1, 0,0);
-
-//   var leftArmMat = new Matrix4(leftArm.matrix);  
-
-//   leftArm.matrix.scale(0.15, .15, 0.4);
-//   leftArm.matrix.translate(-0.5, 0, 0);
-//   leftArm.render();
-
-//   // Left Elbow
-//   var leftElbow = new Cube();
-//   leftElbow.matrix = new Matrix4(leftArmMat);
-//   leftElbow.color = [0.35, 0.3, 0.25, 1.0];
-//   leftElbow.textureNum = -2;
-//   leftElbow.matrix.translate(-0.075, 0.1, 0.35);
-
-//   leftElbow.matrix.rotate(g_leftElbowAngle,1,0,0);
-
-//   leftElbow.matrix.scale(0.15, .15, 0.4);  
-//   leftElbow.matrix.translate(0, -0.5, 0);
-//   leftElbow.render();
-
-//   // Right Leg
-//   var rightLeg = new Cube();
-//   rightLeg.matrix = new Matrix4(bodyMat);  
-
-//   rightLeg.color = [0.32, 0.28, 0.24, 1.0];
-//   rightLeg.textureNum = -2;
-//   // Translate to hip position relative to the body
-//   rightLeg.matrix.translate(-0.17, 0, 0.2);  // tweak these numbers to fit your model
-
-//   // Rotate at the hip if needed (for animation)
-//   rightLeg.matrix.rotate(-g_rightLegAngle, 1, 0, 0);  // optional rotation
-
-//   // Save the joint matrix for knee/foot
-//   var rightLegJoint = new Matrix4(rightLeg.matrix);
-
-//   // Scale the leg shape
-//   rightLeg.matrix.scale(0.15, .15, 0.4);
-
-//   rightLeg.render();
-
-//   // Right Foot
-//   var rightFoot = new Cube();
-//   rightFoot.matrix = new Matrix4(rightLegJoint);  // start at the knee/hip joint
-//   rightFoot.color = [0.32, 0.28, 0.24, 1.0];      // slightly darker brown for the foot
-//   rightFoot.textureNum = -2;
-//   // Translate to ankle/foot position relative to the leg
-//   rightFoot.matrix.translate(0, 0.1, 0.3);  // move forward along Z, tweak if needed
-
-//   // Optional: rotate foot slightly
-//   rightFoot.matrix.rotate(g_rightFootAngle, 1, 0, 0);   // tilt foot forward slightly
-
-//   // Scale the foot shape
-//   rightFoot.matrix.scale(0.15, 0.15, 0.25);  // make it shorter and flatter than the leg
-
-//   rightFoot.render();
-
-//   // Left Leg
-//   var leftLeg = new Cube();
-//   leftLeg.matrix = new Matrix4(bodyMat);  
-
-//   leftLeg.color = [0.32, 0.28, 0.24, 1.0];
-//   leftLeg.textureNum = -2;
-//   // Translate to hip position relative to the body
-//   leftLeg.matrix.translate(0.06, 0, 0.2);  // tweak these numbers to fit your model
-
-//   // Rotate at the hip if needed (for animation)
-//   leftLeg.matrix.rotate(-g_leftLegAngle, 1, 0, 0);  // optional rotation
-
-//   // Save the joint matrix for knee/foot
-//   var leftLegJoint = new Matrix4(leftLeg.matrix);
-
-//   // Scale the leg shape
-//   leftLeg.matrix.scale(0.15, .15, 0.4);
-
-//   leftLeg.render();
-
-//   // Left Foot
-//   var leftFoot = new Cube();
-//   leftFoot.matrix = new Matrix4(leftLegJoint);  // start at the knee/hip joint
-//   leftFoot.color = [0.32, 0.28, 0.24, 1.0];      // slightly darker brown for the foot
-//   leftFoot.textureNum = -2;
-//   // Translate to ankle/foot position relative to the leg
-//   leftFoot.matrix.translate(0, 0.1, 0.3);  // move forward along Z, tweak if needed
-
-//   // Optional: rotate foot slightly
-//   leftFoot.matrix.rotate(g_leftFootAngle, 1, 0, 0);   // tilt foot forward slightly
-
-//   // Scale the foot shape
-//   leftFoot.matrix.scale(0.15, 0.15, 0.25);  // make it shorter and flatter than the leg
-
-//   leftFoot.render();
-// }
 
 function sendTextToHtml(text, htmlID) {
   var htmlElem = document.getElementById(htmlID);
