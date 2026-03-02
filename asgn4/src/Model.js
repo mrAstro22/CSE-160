@@ -67,6 +67,22 @@ class Model {
             normals: new Float32Array(unpackedNormals)
         };
         this.isFullyLoaded = true;
+        this.uploadBuffers();
+    }
+
+    uploadBuffers() {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.modelData.vertices, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.modelData.normals, gl.STATIC_DRAW);
+
+        // dummy UVs
+        if (!this.dummyUVs) {
+            this.dummyUVs = new Float32Array((this.modelData.vertices.length / 3) * 2);
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.dummyUVs, gl.STATIC_DRAW);
     }
 
     render() {
@@ -76,34 +92,31 @@ class Model {
         gl.uniform4f(u_FragColor, this.color[0], this.color[1], this.color[2], this.color[3]);
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-        // Pass normal matrix for correct lighting
         if (this.normalMatrix) {
             gl.uniformMatrix4fv(u_NormalMatrix, false, this.normalMatrix.elements);
         }
 
         // positions
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.modelData.vertices, gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
 
         // normals
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.modelData.normals, gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Normal);
 
-        // dummy UVs — required because a_UV is still enabled from cube draws
-        if (!this.dummyUVs) {
-            this.dummyUVs = new Float32Array((this.modelData.vertices.length / 3) * 2);
-        }
+        // dummy UVs
         gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.dummyUVs, gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_UV);
 
         gl.drawArrays(gl.TRIANGLES, 0, this.modelData.vertices.length / 3);
+
+        // Force drawTriangle3DUVNormal to reinitialize its interleaved layout next call
+        g_triangleBuffer = null;
     }
+
     async getFileContent() {
         try {
             const response = await fetch(this.filePath);

@@ -744,17 +744,27 @@ function renderShapes(){
 
   drawMap();
   
-  // car.matrix.setIdentity();
-  // car.matrix.scale(0.6, 0.5, 0.5);
-  // car.matrix.rotate(240, 0, 1, 0);
-  // car.matrix.translate(7, 0, 0);
-  // var normalMat = new Matrix4();
-  // normalMat.set(car.matrix);  // copy model matrix
-  // normalMat.invert();          // invert
-  // normalMat.transpose();       // transpose
-  // car.normalMatrix.set(normalMat);
-  // car.render();
+  // Draw the OBJ model if loaded
+  if (car && car.isFullyLoaded) {
+      car.matrix.setIdentity();
+      car.matrix.setScale(0.5, 0.5, 0.5);
+      car.matrix.rotate(-90, 1, 0, 0);
+      car.matrix.translate(1, -.75,2);
 
+      car.color = [0.6, 0.0, 0.8, 1.0];
+
+      // normal matrix
+      var normalMat = new Matrix4();
+      normalMat.set(car.matrix);
+      normalMat.invert();
+      normalMat.transpose();
+      car.normalMatrix.set(normalMat);
+
+      // Render
+      // gl.uniform1i(u_whichTexture, -2); // use color
+      // gl.uniform4f(u_FragColor, 1.0, 0.8, 0.6, 1.0);
+      car.render();
+  }
 }
 
 function sendTextToHtml(text, htmlID) {
