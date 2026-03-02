@@ -6,6 +6,7 @@ class Cube {
     this.type = 'cube';
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
+    this.normalMatrix = new Matrix4();
     this.textureNum = -1; // Default to no texture
     this.cubeVerts = new Float32Array([
       // Front face (fixed UVs)
@@ -150,7 +151,10 @@ class Cube {
     // Pass the matrix to u_ModelMatrix attribute
     gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-
+    // var normalMat = new Matrix4();
+    // normalMat.setInverseOf(this.matrix);
+    // normalMat.transpose();
+    // gl.uniformMatrix4fv(u_NormalMatrix, false, normalMat.elements);
 
     // Pass the color of a point to u_FragColor uniform variable
     // gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);

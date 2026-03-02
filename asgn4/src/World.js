@@ -10,13 +10,14 @@ var VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
+  uniform mat4 u_NormalMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = vec2(a_UV.y, 1.0 - a_UV.x);
-    v_Normal = a_Normal;
+    v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 1)));
     v_VertPos = u_ModelMatrix * a_Position;
   }`
 
@@ -108,6 +109,7 @@ let a_Normal;
 let u_lightPos;
 let u_cameraPos;
 let u_lightOn;
+let u_NormalMatrix;
 
 function setupWebGL(){
   // Retrieve <canvas> element
@@ -126,6 +128,12 @@ function connectVariablesToGLSL(){
   // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
     console.log('Failed to intialize shaders.');
+    return;
+  }
+
+  u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+  if (!u_NormalMatrix) {
+    console.log('Failed to get the storage location of u_NormalMatrix');
     return;
   }
 
@@ -501,7 +509,8 @@ function main() {
   // Setup GLSL shader programs and connect GLSL variables
   connectVariablesToGLSL();
 
-  car = new Model("carEdited.obj");
+  car = new Model("coffee.obj");
+  car.normalMatrix = new Matrix4();
 
   // Clicking Events for Buttong
   UIElements();
@@ -662,7 +671,7 @@ function renderShapes(){
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  // gl.clear(gl.COLOR_BUFFER_BIT);
 
   // Pass the Light Position to GLSL
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
@@ -682,17 +691,18 @@ function renderShapes(){
   light.matrix.translate(-0.5, -0.5, -0.5);
   light.renderNormal();
 
-  car.matrix.setIdentity();
-  car.matrix.scale(0.6, 0.5, 0.5);
-  car.matrix.rotate(240, 0, 1, 0);
-  car.matrix.translate(7, 0, 0);
-  car.render();
-
   // Draw the normal sphere
   var sp = new NormalSphere();
   if (g_NormalOn) sp.textureNum = -3;
-  sp.matrix.translate(-1,0,-1.5);
-  // sp.matrix.scale(0,0.5,0);
+  sp.matrix.translate(-1, 0, -1.5);
+
+  // Compute normal matrix for correct lighting
+  var normalMat = new Matrix4();
+  normalMat.set(sp.matrix);
+  normalMat.invert();
+  normalMat.transpose();
+  gl.uniformMatrix4fv(u_NormalMatrix, false, normalMat.elements);
+
   sp.render();
   
   // Draw the floor
@@ -707,7 +717,7 @@ function renderShapes(){
 
   // Draw the skybox
   var skybox = new Cube();
-  skybox.color = [1, 1, 1, 1.0];
+  skybox.color = [1, 1, 1, 1];
   if (g_NormalOn) skybox.textureNum = -3;
   else skybox.textureNum = 0;
   skybox.matrix.scale(-50, -50, -50);
@@ -720,7 +730,7 @@ function renderShapes(){
   if (g_NormalOn) body.textureNum = -3;
   else body.textureNum = 3;
   body.matrix.translate(-0.5, -.75, 0.0);
-  body.matrix.scale(1, 1, 1);
+  body.matrix.scale(1, -1, 1);
   body.renderNormal();
 
   // Render each shape in the list
@@ -729,10 +739,22 @@ function renderShapes(){
   if (g_NormalOn) hint.textureNum = -3;
   else hint.textureNum = 5;
   hint.matrix.translate(0.5, -.75, 0.0);
-  hint.matrix.scale(1, 1, 1);
+  hint.matrix.scale(1, -1, 1);
   hint.renderNormal();
 
   drawMap();
+  
+  // car.matrix.setIdentity();
+  // car.matrix.scale(0.6, 0.5, 0.5);
+  // car.matrix.rotate(240, 0, 1, 0);
+  // car.matrix.translate(7, 0, 0);
+  // var normalMat = new Matrix4();
+  // normalMat.set(car.matrix);  // copy model matrix
+  // normalMat.invert();          // invert
+  // normalMat.transpose();       // transpose
+  // car.normalMatrix.set(normalMat);
+  // car.render();
+
 }
 
 function sendTextToHtml(text, htmlID) {
