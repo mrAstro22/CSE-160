@@ -1,0 +1,12 @@
+# Blender 5.0.1 MTL File: 'trunks.blend'
+# www.blender.org
+
+newmtl basic
+Ns 19.411663
+Ka 1.000000 1.000000 1.000000
+Ks 0.112540 0.112540 0.112540
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/log_diff.png
